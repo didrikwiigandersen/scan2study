@@ -23,10 +23,38 @@ export default function StudyPage() {
     setIsLoaded(true)
   }, [])
 
-  // Get snippet of text (first 400 characters)
-  const getTextSnippet = (text: string) => {
-    if (text.length <= 400) return text
-    return text.substring(0, 400) + "..."
+  const handleDownloadTxt = () => {
+    if (!parsedText || typeof parsedText !== "string" || parsedText.trim().length === 0) {
+      setError("No text available to download. Please upload a PDF first.")
+      return
+    }
+
+    try {
+      // Create Blob with text/plain type
+      const blob = new Blob([parsedText], { type: "text/plain" })
+      const url = URL.createObjectURL(blob)
+
+      // Get filename without extension
+      const fileNameWithoutExtension = fileName
+        ? fileName.replace(/\.[^/.]+$/, "")
+        : "reading"
+
+      // Create temporary anchor element
+      const link = document.createElement("a")
+      link.href = url
+      link.download = `${fileNameWithoutExtension}.txt`
+
+      // Append, click, and remove
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+
+      // Revoke object URL
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      console.error("Error downloading file:", err)
+      setError("Failed to download file. Please try again.")
+    }
   }
 
   const handleGenerateSummary = async () => {
@@ -119,18 +147,19 @@ export default function StudyPage() {
           </div>
         ) : (
           <div className="w-full max-w-2xl space-y-6">
-            {/* File name as heading */}
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
-              {fileName}
-            </h1>
-
-            {/* Scrollable text snippet box */}
-            <div className="bg-white rounded-lg border p-6">
-              <div className="max-h-64 overflow-y-auto">
-                <p className="text-sm text-gray-700 whitespace-pre-wrap">
-                  {getTextSnippet(parsedText)}
-                </p>
-              </div>
+            {/* File name as heading with download button */}
+            <div className="flex items-center justify-between gap-4">
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 flex-1">
+                {fileName}
+              </h1>
+              <Button
+                onClick={handleDownloadTxt}
+                variant="outline"
+                size="sm"
+                className="shrink-0"
+              >
+                Download .txt
+              </Button>
             </div>
 
             {/* Generate summary button */}
