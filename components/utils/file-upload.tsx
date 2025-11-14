@@ -67,7 +67,7 @@ export function FileUpload({ onFileSelect, className, accept }: FileUploadProps)
         onDrop={handleDrop}
         onClick={handleClick}
         className={cn(
-          "relative border-2 border-dashed rounded-lg p-8 sm:p-12 transition-all cursor-pointer",
+          "relative border rounded-lg p-8 sm:p-12 transition-all cursor-pointer",
           "hover:border-primary/50 hover:bg-accent/50",
           isDragging && "border-primary bg-accent/50",
           selectedFile && "border-primary/50 bg-accent/30"
@@ -82,10 +82,10 @@ export function FileUpload({ onFileSelect, className, accept }: FileUploadProps)
         />
 
         {selectedFile ? (
-          <div className="flex flex-col items-center justify-center gap-4">
+          <div className="flex flex-col items-center justify-center">
             <div className="relative">
               <div className="w-16 h-16 rounded-lg bg-primary/10 flex items-center justify-center">
-                <File className="w-8 h-8 text-primary" />
+                <File className="w-6 h-6 text-primary" />
               </div>
               <button
                 onClick={handleRemove}
@@ -103,9 +103,9 @@ export function FileUpload({ onFileSelect, className, accept }: FileUploadProps)
             </div>
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center gap-4">
+          <div className="flex flex-col items-center justify-center">
             <div className="w-16 h-16 rounded-lg bg-muted flex items-center justify-center">
-              <Upload className="w-8 h-8 text-muted-foreground" />
+              <Upload className="w-6 h-6 text-muted-foreground" />
             </div>
             <div className="text-center">
               <p className="text-sm font-medium text-foreground">

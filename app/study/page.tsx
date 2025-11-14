@@ -1,8 +1,28 @@
 "use client"
 
-import { UploadPanel } from "@/components/UploadPanel";
+import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 
-export default function Home() {
+export default function StudyPage() {
+  const router = useRouter()
+  const [parsedText, setParsedText] = useState<string | null>(null)
+  const [fileName, setFileName] = useState<string | null>(null)
+
+  useEffect(() => {
+    // Get data from localStorage
+    const text = localStorage.getItem("scan2study:parsedText")
+    const name = localStorage.getItem("scan2study:fileName")
+
+    if (!text || !name) {
+      // If no data, redirect back to home
+      router.push("/")
+      return
+    }
+
+    setParsedText(text)
+    setFileName(name)
+  }, [router])
+
   return (
     <div className="min-h-screen bg-[#fafafa] font-sans">
       {/* Navigation Bar */}
@@ -43,11 +63,27 @@ export default function Home() {
       </nav>
 
       {/* Main Content */}
-      <main className="flex min-h-[calc(100vh-80px)] w-full max-w-3xl mx-auto flex-col items-center justify-center py-12 px-4 sm:px-8 lg:px-16">
-        <div className="w-full max-w-2xl">
-          <UploadPanel />
-        </div>
+      <main className="flex min-h-[calc(100vh-80px)] w-full max-w-4xl mx-auto flex-col py-12 px-4 sm:px-8 lg:px-16">
+        {parsedText && fileName ? (
+          <div className="space-y-6">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">Study Mode</h1>
+              <p className="text-sm text-muted-foreground">File: {fileName}</p>
+            </div>
+            <div className="bg-white rounded-lg border p-6">
+              <h2 className="text-lg font-semibold mb-4">Parsed Text</h2>
+              <div className="prose max-w-none">
+                <p className="text-sm text-gray-700 whitespace-pre-wrap">{parsedText}</p>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="text-center">
+            <p className="text-muted-foreground">Loading...</p>
+          </div>
+        )}
       </main>
     </div>
-  );
+  )
 }
+
