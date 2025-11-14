@@ -1,6 +1,30 @@
-import Image from "next/image";
+"use client"
+
+import { useState } from "react"
+import { FileUpload } from "@/components/ui/file-upload";
+import { Button } from "@/components/ui/button";
 
 export default function Home() {
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
+  const handleFileSelect = (file: File | null) => {
+    if (file) {
+      console.log("File selected:", file.name);
+      setSelectedFile(file);
+      // Handle file upload logic here
+    } else {
+      console.log("File removed");
+      setSelectedFile(null);
+    }
+  };
+
+  const handleStudy = () => {
+    if (selectedFile) {
+      console.log("Starting study with file:", selectedFile.name);
+      // Handle study logic here
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#fafafa] font-sans">
       {/* Navigation Bar */}
@@ -41,8 +65,18 @@ export default function Home() {
       </nav>
 
       {/* Main Content */}
-      <main className="flex min-h-[calc(100vh-80px)] w-full max-w-3xl mx-auto flex-col items-center justify-between py-32 px-4 sm:px-8 lg:px-16">
-        hello world
+      <main className="flex min-h-[calc(100vh-80px)] w-full max-w-3xl mx-auto flex-col items-center justify-center py-12 px-4 sm:px-8 lg:px-16">
+        <div className="w-full max-w-2xl space-y-4">
+          <FileUpload onFileSelect={handleFileSelect} />
+          <Button 
+            onClick={handleStudy} 
+            disabled={!selectedFile}
+            className="w-full"
+            size="lg"
+          >
+            Study
+          </Button>
+        </div>
       </main>
     </div>
   );
