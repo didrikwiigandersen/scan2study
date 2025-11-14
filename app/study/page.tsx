@@ -2,26 +2,68 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import { Button } from "@/components/ui/button"
 
 export default function StudyPage() {
   const router = useRouter()
   const [parsedText, setParsedText] = useState<string | null>(null)
   const [fileName, setFileName] = useState<string | null>(null)
+  const [isLoaded, setIsLoaded] = useState(false)
+  const [summary, setSummary] = useState<string | null>(null)
+  const [isSummarizing, setIsSummarizing] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     // Get data from localStorage
     const text = localStorage.getItem("scan2study:parsedText")
     const name = localStorage.getItem("scan2study:fileName")
 
-    if (!text || !name) {
-      // If no data, redirect back to home
-      router.push("/")
+    setParsedText(text)
+    setFileName(name)
+    setIsLoaded(true)
+  }, [])
+
+  // Get snippet of text (first 400 characters)
+  const getTextSnippet = (text: string) => {
+    if (text.length <= 400) return text
+    return text.substring(0, 400) + "..."
+  }
+
+  const handleGenerateSummary = async () => {
+    if (!parsedText || typeof parsedText !== "string" || parsedText.trim().length === 0) {
+      setError("No text available to summarize. Please upload a PDF first.")
       return
     }
 
-    setParsedText(text)
-    setFileName(name)
-  }, [router])
+    setIsSummarizing(true)
+    setError(null)
+
+    try {
+      const response = await fetch("/api/summary", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ text: parsedText }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        const errorMessage = errorData.error || "Failed to generate summary"
+        setError(errorMessage)
+        setIsSummarizing(false)
+        return
+      }
+
+      const data = await response.json()
+      setSummary(data.summary)
+      setIsSummarizing(false)
+    } catch (err) {
+      console.error("Error generating summary:", err)
+      setError("An unexpected error occurred. Please try again.")
+      setIsSummarizing(false)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-[#fafafa] font-sans">
@@ -63,23 +105,76 @@ export default function StudyPage() {
       </nav>
 
       {/* Main Content */}
-      <main className="flex min-h-[calc(100vh-80px)] w-full max-w-4xl mx-auto flex-col py-12 px-4 sm:px-8 lg:px-16">
-        {parsedText && fileName ? (
-          <div className="space-y-6">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">Study Mode</h1>
-              <p className="text-sm text-muted-foreground">File: {fileName}</p>
-            </div>
-            <div className="bg-white rounded-lg border p-6">
-              <h2 className="text-lg font-semibold mb-4">Parsed Text</h2>
-              <div className="prose max-w-none">
-                <p className="text-sm text-gray-700 whitespace-pre-wrap">{parsedText}</p>
-              </div>
-            </div>
-          </div>
-        ) : (
+      <main className="flex min-h-[calc(100vh-80px)] w-full max-w-3xl mx-auto flex-col items-center justify-center py-12 px-4 sm:px-8 lg:px-16">
+        {!isLoaded ? (
           <div className="text-center">
             <p className="text-muted-foreground">Loading...</p>
+          </div>
+        ) : !parsedText ? (
+          <div className="w-full max-w-2xl bg-white rounded-lg border p-8 text-center space-y-4">
+            <p className="text-gray-700">No document loaded. Please go back and upload a PDF.</p>
+            <Button onClick={() => router.push("/")} className="w-full" size="lg">
+              Go Back
+            </Button>
+          </div>
+        ) : (
+          <div className="w-full max-w-2xl space-y-6">
+            {/* File name as heading */}
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+              {fileName}
+            </h1>
+
+            {/* Scrollable text snippet box */}
+            <div className="bg-white rounded-lg border p-6">
+              <div className="max-h-64 overflow-y-auto">
+                <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                  {getTextSnippet(parsedText)}
+                </p>
+              </div>
+            </div>
+
+            {/* Generate summary button */}
+            <Button
+              onClick={handleGenerateSummary}
+              className="w-full"
+              size="lg"
+              disabled={isSummarizing}
+            >
+              {isSummarizing ? "Generating summary…" : "Generate summary"}
+            </Button>
+
+            {/* Error message */}
+            {error && (
+              <div className="text-sm text-destructive text-center">
+                {error}
+              </div>
+            )}
+
+            {/* Summary display */}
+            {summary && (
+              <div className="bg-white rounded-lg border p-6 space-y-3">
+                <h2 className="text-lg font-semibold text-gray-900">Summary</h2>
+                <div className="prose max-w-none">
+                  <div className="text-sm text-gray-700 whitespace-pre-wrap">
+                    {summary.split('\n').map((line, index) => {
+                      // Check if line looks like a bullet point
+                      if (line.trim().match(/^[•\-\*]\s/) || line.trim().match(/^\d+\.\s/)) {
+                        return (
+                          <div key={index} className="mb-2 pl-4">
+                            {line.trim()}
+                          </div>
+                        )
+                      }
+                      return (
+                        <p key={index} className="mb-2">
+                          {line}
+                        </p>
+                      )
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </main>

@@ -36,9 +36,16 @@ export function UploadPanel() {
       const data = await response.json()
       const { text, fileName } = data
 
+      // Validate that we received text
+      if (!text || typeof text !== "string" || text.trim().length === 0) {
+        setError("No text could be extracted from the PDF. Please try a different file.")
+        setIsParsing(false)
+        return
+      }
+
       // Store in localStorage
       localStorage.setItem("scan2study:parsedText", text)
-      localStorage.setItem("scan2study:fileName", fileName)
+      localStorage.setItem("scan2study:fileName", fileName || "document.pdf")
 
       // Navigate to study page
       router.push("/study")
