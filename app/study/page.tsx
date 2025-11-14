@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
+import ReactMarkdown from "react-markdown"
 
 type ChatMessage = {
   id: string
@@ -15,13 +16,11 @@ export default function StudyPage() {
   const [parsedText, setParsedText] = useState<string | null>(null)
   const [fileName, setFileName] = useState<string | null>(null)
   const [isLoaded, setIsLoaded] = useState(false)
-  const [summary, setSummary] = useState<string | null>(null)
-  const [isSummarizing, setIsSummarizing] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
   const [chatInput, setChatInput] = useState("")
   const [isSending, setIsSending] = useState(false)
   const [chatError, setChatError] = useState<string | null>(null)
+  const [hasGeneratedSummary, setHasGeneratedSummary] = useState(false)
   const chatEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -34,6 +33,91 @@ export default function StudyPage() {
     setIsLoaded(true)
   }, [])
 
+  // Auto-generate summary on load (disabled for development - using dummy text)
+  useEffect(() => {
+    if (!parsedText || hasGeneratedSummary || chatMessages.length > 0) {
+      return
+    }
+
+    // Use dummy summary text instead of API call to save credits
+    const dummySummary = `• **Main Thesis**: This reading explores the central themes and arguments presented in the document, focusing on key concepts and their implications.
+
+• **Key Arguments**: The author presents several important points that build upon each other, creating a comprehensive framework for understanding the subject matter.
+
+• **Important Concepts**: Key terms and definitions are introduced throughout the text, each contributing to the overall understanding of the topic.
+
+• **Conclusions**: The reading concludes with significant implications that extend beyond the immediate scope of the discussion.`
+
+    setChatMessages([
+      {
+        id: crypto.randomUUID(),
+        role: "assistant",
+        content: dummySummary,
+      },
+    ])
+    setHasGeneratedSummary(true)
+
+    // Original API call code (commented out for development)
+    /*
+    const generateSummary = async () => {
+      // Add loading message
+      const loadingMessage: ChatMessage = {
+        id: crypto.randomUUID(),
+        role: "assistant",
+        content: "Generating summary...",
+      }
+      setChatMessages([loadingMessage])
+      setHasGeneratedSummary(true)
+
+      try {
+        const response = await fetch("/api/summary", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ text: parsedText }),
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}))
+          const errorMessage = errorData.error || "Failed to generate summary"
+          setChatMessages([
+            {
+              id: crypto.randomUUID(),
+              role: "assistant",
+              content: `Sorry, I couldn't generate a summary: ${errorMessage}`,
+            },
+          ])
+          return
+        }
+
+        const data = await response.json()
+        const { summary } = data
+
+        // Replace loading message with actual summary
+        setChatMessages([
+          {
+            id: crypto.randomUUID(),
+            role: "assistant",
+            content: summary,
+          },
+        ])
+      } catch (err) {
+        console.error("Error generating summary:", err)
+        setChatMessages([
+          {
+            id: crypto.randomUUID(),
+            role: "assistant",
+            content: "Sorry, an error occurred while generating the summary. Please try asking a question instead.",
+          },
+        ])
+      }
+    }
+
+    generateSummary()
+    */
+  }, [parsedText, hasGeneratedSummary, chatMessages.length])
+
   // Auto-scroll chat to bottom when new messages are added
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -41,7 +125,7 @@ export default function StudyPage() {
 
   const handleDownloadTxt = () => {
     if (!parsedText || typeof parsedText !== "string" || parsedText.trim().length === 0) {
-      setError("No text available to download. Please upload a PDF first.")
+      setChatError("No text available to download. Please upload a PDF first.")
       return
     }
 
@@ -69,43 +153,7 @@ export default function StudyPage() {
       URL.revokeObjectURL(url)
     } catch (err) {
       console.error("Error downloading file:", err)
-      setError("Failed to download file. Please try again.")
-    }
-  }
-
-  const handleGenerateSummary = async () => {
-    if (!parsedText || typeof parsedText !== "string" || parsedText.trim().length === 0) {
-      setError("No text available to summarize. Please upload a PDF first.")
-      return
-    }
-
-    setIsSummarizing(true)
-    setError(null)
-
-    try {
-      const response = await fetch("/api/summary", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ text: parsedText }),
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        const errorMessage = errorData.error || "Failed to generate summary"
-        setError(errorMessage)
-        setIsSummarizing(false)
-        return
-      }
-
-      const data = await response.json()
-      setSummary(data.summary)
-      setIsSummarizing(false)
-    } catch (err) {
-      console.error("Error generating summary:", err)
-      setError("An unexpected error occurred. Please try again.")
-      setIsSummarizing(false)
+      setChatError("Failed to download file. Please try again.")
     }
   }
 
@@ -181,92 +229,103 @@ export default function StudyPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#fafafa] font-sans">
-      {/* Main Content */}
-      <main className="flex min-h-screen w-full max-w-3xl mx-auto flex-col items-center justify-center py-12 px-4 sm:px-8 lg:px-16">
-        {!isLoaded ? (
-          <div className="text-center">
-            <p className="text-muted-foreground">Loading...</p>
+    <div className="min-h-screen bg-white font-sans flex flex-col">
+      {!isLoaded ? (
+        <div className="flex-1 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-8 h-8 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin" />
+            <p className="text-sm text-muted-foreground">Loading...</p>
           </div>
-        ) : !parsedText ? (
-          <div className="w-full max-w-2xl bg-white rounded-lg border p-8 text-center space-y-4">
-            <p className="text-gray-700">No document loaded. Please go back and upload a PDF.</p>
+        </div>
+      ) : !parsedText ? (
+        <div className="flex-1 flex items-center justify-center px-4">
+          <div className="w-full max-w-md bg-white rounded-2xl border border-gray-200 p-10 text-center space-y-6 shadow-sm">
+            <div className="w-16 h-16 mx-auto bg-gray-100 rounded-full flex items-center justify-center">
+              <svg
+                className="w-8 h-8 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
+              </svg>
+            </div>
+            <div className="space-y-2">
+              <p className="text-base font-medium text-gray-900">No document loaded</p>
+              <p className="text-sm text-gray-500">Please go back and upload a PDF to get started.</p>
+            </div>
             <Button onClick={() => router.push("/")} className="w-full" size="lg">
               Go Back
             </Button>
           </div>
-        ) : (
-          <div className="w-full max-w-2xl space-y-6">
-            {/* File name as heading with download button */}
-            <div className="flex items-center justify-between gap-4">
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 flex-1">
-                {fileName}
-              </h1>
-              <Button
-                onClick={handleDownloadTxt}
-                variant="outline"
-                size="sm"
-                className="shrink-0"
-              >
-                Download .txt
-              </Button>
-            </div>
-
-            {/* Generate summary button */}
-            <Button
-              onClick={handleGenerateSummary}
-              className="w-full"
-              size="lg"
-              disabled={isSummarizing}
+        </div>
+      ) : (
+        <div className="flex flex-col min-h-screen max-w-4xl mx-auto w-full bg-white">
+          {/* Header */}
+          <header className="sticky top-0 z-10 flex items-center justify-between gap-4 px-6 py-4 border-b border-gray-200 bg-white/80 backdrop-blur-sm">
+            <h1 className="text-base font-semibold text-gray-900 truncate">
+              {fileName}
+            </h1>
+            <button
+              onClick={handleDownloadTxt}
+              className="p-2 rounded-xl hover:bg-gray-100 transition-colors duration-200"
+              aria-label="Download .txt"
+              title="Download .txt"
             >
-              {isSummarizing ? "Generating summary…" : "Generate summary"}
-            </Button>
+              <svg
+                className="w-5 h-5 text-gray-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                />
+              </svg>
+            </button>
+          </header>
 
-            {/* Error message */}
-            {error && (
-              <div className="text-sm text-destructive text-center">
-                {error}
-              </div>
-            )}
-
-            {/* Summary display */}
-            {summary && (
-              <div className="bg-white rounded-lg border p-6 space-y-3">
-                <h2 className="text-lg font-semibold text-gray-900">Summary</h2>
-                <div className="prose max-w-none">
-                  <div className="text-sm text-gray-700 whitespace-pre-wrap">
-                    {summary.split('\n').map((line, index) => {
-                      // Check if line looks like a bullet point
-                      if (line.trim().match(/^[•\-\*]\s/) || line.trim().match(/^\d+\.\s/)) {
-                        return (
-                          <div key={index} className="mb-2 pl-4">
-                            {line.trim()}
-                          </div>
-                        )
-                      }
-                      return (
-                        <p key={index} className="mb-2">
-                          {line}
-                        </p>
-                      )
-                    })}
+          {/* Chat area */}
+          <div className="flex-1 overflow-y-auto bg-white px-4 sm:px-6 py-8">
+            <div className="max-w-3xl mx-auto flex flex-col gap-6">
+              {chatMessages.length === 0 ? (
+                <div className="flex items-center justify-center h-full min-h-[60vh]">
+                  <div className="text-center space-y-3 max-w-md">
+                    <div className="w-12 h-12 mx-auto bg-gray-100 rounded-full flex items-center justify-center">
+                      <svg
+                        className="w-6 h-6 text-gray-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={1.5}
+                          d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
+                        />
+                      </svg>
+                    </div>
+                    <p className="text-base text-gray-500">
+                      Where should we begin?
+                    </p>
+                    <p className="text-sm text-gray-400">
+                      Ask anything about this reading, e.g. "What is the author's main argument?"
+                    </p>
                   </div>
                 </div>
-              </div>
-            )}
-
-            {/* Ask questions panel */}
-            <div className="bg-white rounded-lg border p-6 space-y-4">
-              <h2 className="text-lg font-semibold text-gray-900">Ask questions about this reading</h2>
-              
-              {/* Chat messages area */}
-              <div className="h-80 overflow-y-auto flex flex-col gap-2 p-4 bg-gray-50 rounded-lg">
-                {chatMessages.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-8">
-                    Ask a question about the reading to get started.
-                  </p>
-                ) : (
-                  chatMessages.map((message) => (
+              ) : (
+                <>
+                  {chatMessages.map((message) => (
                     <div
                       key={message.id}
                       className={`flex ${
@@ -274,57 +333,93 @@ export default function StudyPage() {
                       }`}
                     >
                       <div
-                        className={`max-w-[80%] rounded-lg px-4 py-2 ${
+                        className={`max-w-[85%] rounded-2xl px-5 py-3.5 shadow-sm transition-opacity ${
                           message.role === "user"
-                            ? "bg-sky-600 text-white"
-                            : "bg-slate-800 text-slate-50"
+                            ? "bg-gray-900 text-white"
+                            : "bg-gray-50 text-gray-900 border border-gray-200"
                         }`}
                       >
-                        <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                        {message.role === "assistant" ? (
+                          <div className="text-[15px] leading-relaxed [&_p]:my-2 [&_p:first-child]:mt-0 [&_p:last-child]:mb-0 [&_strong]:font-semibold [&_strong]:text-gray-900 [&_em]:italic [&_ul]:my-2 [&_ul]:ml-4 [&_ul]:list-disc [&_ol]:my-2 [&_ol]:ml-4 [&_ol]:list-decimal [&_li]:my-1 [&_h1]:text-lg [&_h1]:font-semibold [&_h1]:my-3 [&_h2]:text-base [&_h2]:font-semibold [&_h2]:my-2 [&_h3]:text-[15px] [&_h3]:font-semibold [&_h3]:my-2 [&_code]:bg-gray-200 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-sm [&_pre]:bg-gray-200 [&_pre]:p-3 [&_pre]:rounded-lg [&_pre]:overflow-x-auto [&_pre]:my-2">
+                            <ReactMarkdown>{message.content}</ReactMarkdown>
+                          </div>
+                        ) : (
+                          <p className="text-[15px] whitespace-pre-wrap leading-relaxed">
+                            {message.content}
+                          </p>
+                        )}
                       </div>
                     </div>
-                  ))
-                )}
-                {isSending && (
-                  <div className="flex justify-start">
-                    <div className="bg-slate-800 text-slate-50 rounded-lg px-4 py-2">
-                      <p className="text-sm">Thinking...</p>
+                  ))}
+                  {isSending && (
+                    <div className="flex justify-start">
+                      <div className="bg-gray-50 text-gray-900 border border-gray-200 rounded-2xl px-5 py-3.5 shadow-sm">
+                        <div className="flex items-center gap-2">
+                          <div className="flex gap-1.5">
+                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                )}
-                <div ref={chatEndRef} />
-              </div>
+                  )}
+                </>
+              )}
+              <div ref={chatEndRef} />
+            </div>
+          </div>
 
-              {/* Chat error */}
+          {/* Input bar */}
+          <div className="sticky bottom-0 border-t border-gray-200 bg-white/80 backdrop-blur-sm px-4 sm:px-6 py-5">
+            <div className="max-w-3xl mx-auto">
               {chatError && (
-                <div className="text-sm text-destructive text-center">
+                <div className="text-sm text-red-600 mb-3 text-center px-4 py-2 bg-red-50 rounded-xl border border-red-100">
                   {chatError}
                 </div>
               )}
-
-              {/* Chat input and send button */}
-              <div className="flex gap-2">
+              <div className="flex gap-3 items-end">
                 <input
                   type="text"
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder="Ask a question about the reading..."
-                  className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  placeholder={`Ask anything about ${fileName}`}
+                  className="flex-1 px-5 py-3.5 bg-gray-50 rounded-2xl focus:outline-none focus:ring-2 focus:ring-gray-900 transition-all text-[15px] placeholder:text-gray-400 disabled:opacity-50"
                   disabled={isSending}
                 />
                 <Button
                   onClick={handleSend}
                   disabled={isSending || chatInput.trim().length === 0}
                   size="lg"
+                  className="px-6 h-[50px] rounded-2xl bg-gray-900 hover:bg-gray-800 text-white disabled:opacity-40 disabled:cursor-not-allowed"
                 >
-                  {isSending ? "Thinking…" : "Send"}
+                  {isSending ? (
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <span>Thinking</span>
+                    </div>
+                  ) : (
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                      />
+                    </svg>
+                  )}
                 </Button>
               </div>
             </div>
           </div>
-        )}
-      </main>
+        </div>
+      )}
     </div>
   )
 }

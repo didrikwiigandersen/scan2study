@@ -104,7 +104,7 @@ export function FileUpload({ onFileSelect, className, accept }: FileUploadProps)
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center">
-            <div className="w-16 h-16 rounded-lg bg-muted flex items-center justify-center">
+            <div className="w-16 h-16 flex items-center justify-center">
               <Upload className="w-6 h-6 text-muted-foreground" />
             </div>
             <div className="text-center">

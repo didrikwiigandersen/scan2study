@@ -85,25 +85,24 @@ export function UploadPanel() {
       />
       
       {/* Status line */}
-      <div className="text-center">
-        {isParsing ? (
-          <p className="text-sm text-muted-foreground">Parsing PDF…</p>
-        ) : error ? (
-          <p className="text-sm text-destructive">{error}</p>
-        ) : (
-          <p className="text-sm text-muted-foreground">Ready to parse</p>
-        )}
-      </div>
+      {(isParsing || error) && (
+        <div className="text-center">
+          {isParsing ? (
+            <p className="text-sm text-muted-foreground">Parsing PDF…</p>
+          ) : (
+            <p className="text-sm text-destructive">{error}</p>
+          )}
+        </div>
+      )}
 
-      {/* Continue button (hidden/disabled during parsing) */}
-      {selectedFile && (
+      {/* Continue button (hidden during parsing) */}
+      {selectedFile && !isParsing && (
         <Button
           onClick={() => selectedFile && handleParse(selectedFile)}
           className="w-full"
           size="lg"
-          disabled={isParsing}
         >
-          {isParsing ? "Parsing your PDF…" : error ? "Retry" : "Continue"}
+          {error ? "Retry" : "Continue"}
         </Button>
       )}
     </div>
