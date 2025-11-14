@@ -1,38 +1,38 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Scan2Study
 
-## Getting Started
+![Scan2Study Screenshot](./image.png)
+---
 
-First, run the development server:
+## 🚀 Overview  
+**Scan2Study** turns scanned or non-machine-readable PDFs—like old course readings—into a clean chat-based study assistant.  
+Upload a PDF → automatic OCR → instant summary → ask contextual questions → optionally download the raw text.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+It’s built for students who want to understand readings faster without the hassle of manually converting files or copy-pasting text into an AI model.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 💡 Why I Built This  
+Many university readings—especially older scanned PDFs—can’t be parsed directly by AI tools.  
+I kept running into situations where I wanted to use Claude or ChatGPT to help me study, but the text wasn’t extractable without multiple annoying steps.  
+Scan2Study removes that friction by instantly parsing the document and turning it into an interactive study companion.  
+The goal is to help students focus on learning, not file formats, and make AI genuinely useful for real coursework.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## ✨ Features  
+- 📥 Upload scanned or unreadable PDFs  
+- 🔍 Automatic OCR and text extraction  
+- 🧠 Automatic summary generated with Claude  
+- 💬 Full chat interface to ask questions about the reading  
+- 📄 Download raw `.txt` version of the parsed text  
+- ⚡ Clean, fast, and student-friendly design
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 🛠️ Tech Stack  
+- **Next.js 14 (App Router)**  
+- **React + TypeScript**  
+- **TailwindCSS**  
+- **OCR.space** (free OCR API)  
+- **Anthropic Claude 3.5** (summaries + Q&A)  
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-# scan2study
-# scan2study
