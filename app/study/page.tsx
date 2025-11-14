@@ -1,8 +1,14 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
+
+type ChatMessage = {
+  id: string
+  role: "user" | "assistant"
+  content: string
+}
 
 export default function StudyPage() {
   const router = useRouter()
@@ -12,6 +18,11 @@ export default function StudyPage() {
   const [summary, setSummary] = useState<string | null>(null)
   const [isSummarizing, setIsSummarizing] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
+  const [chatInput, setChatInput] = useState("")
+  const [isSending, setIsSending] = useState(false)
+  const [chatError, setChatError] = useState<string | null>(null)
+  const chatEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     // Get data from localStorage
@@ -22,6 +33,11 @@ export default function StudyPage() {
     setFileName(name)
     setIsLoaded(true)
   }, [])
+
+  // Auto-scroll chat to bottom when new messages are added
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  }, [chatMessages, isSending])
 
   const handleDownloadTxt = () => {
     if (!parsedText || typeof parsedText !== "string" || parsedText.trim().length === 0) {
@@ -93,47 +109,81 @@ export default function StudyPage() {
     }
   }
 
+  const handleSend = async () => {
+    // Prevent sending if input is empty or already sending
+    if (chatInput.trim().length === 0 || isSending) {
+      return
+    }
+
+    if (!parsedText || typeof parsedText !== "string" || parsedText.trim().length === 0) {
+      setChatError("No text available. Please upload a PDF first.")
+      return
+    }
+
+    // Clear error
+    setChatError(null)
+
+    // Save the user question
+    const userQuestion = chatInput.trim()
+
+    // Add user message to chat
+    const userMessage: ChatMessage = {
+      id: crypto.randomUUID(),
+      role: "user",
+      content: userQuestion,
+    }
+
+    setChatMessages((prev) => [...prev, userMessage])
+    setChatInput("")
+    setIsSending(true)
+
+    try {
+      const response = await fetch("/api/qa", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ text: parsedText, question: userQuestion }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        const errorMessage = errorData.error || "Failed to get answer"
+        setChatError(errorMessage)
+        setIsSending(false)
+        return
+      }
+
+      const data = await response.json()
+      const { answer } = data
+
+      // Add assistant message
+      const assistantMessage: ChatMessage = {
+        id: crypto.randomUUID(),
+        role: "assistant",
+        content: answer,
+      }
+
+      setChatMessages((prev) => [...prev, assistantMessage])
+      setIsSending(false)
+    } catch (err) {
+      console.error("Error sending message:", err)
+      setChatError("An unexpected error occurred. Please try again.")
+      setIsSending(false)
+    }
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault()
+      handleSend()
+    }
+  }
+
   return (
     <div className="min-h-screen bg-[#fafafa] font-sans">
-      {/* Navigation Bar */}
-      <nav className="w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          {/* Logo - Left */}
-          <div className="font-sans text-xl sm:text-xl lg:text-2xl font-bold text-gray-900">
-            Scan2Study
-          </div>
-          
-          {/* About and GitHub - Right */}
-          <div className="flex items-center gap-4 sm:gap-6">
-            <div className="font-sans text-base sm:text-md lg:text-lg font-normal text-gray-700 hover:text-gray-900 transition-colors cursor-pointer">
-              About
-            </div>
-            <a
-              href="https://github.com/didrikwiigandersen/scan2study"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-gray-700 hover:text-gray-900 transition-colors"
-              aria-label="GitHub repository"
-            >
-              <svg
-                className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7"
-                fill="currentColor"
-                viewBox="0 0 24 24"
-                aria-hidden="true"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            </a>
-          </div>
-        </div>
-      </nav>
-
       {/* Main Content */}
-      <main className="flex min-h-[calc(100vh-80px)] w-full max-w-3xl mx-auto flex-col items-center justify-center py-12 px-4 sm:px-8 lg:px-16">
+      <main className="flex min-h-screen w-full max-w-3xl mx-auto flex-col items-center justify-center py-12 px-4 sm:px-8 lg:px-16">
         {!isLoaded ? (
           <div className="text-center">
             <p className="text-muted-foreground">Loading...</p>
@@ -204,6 +254,74 @@ export default function StudyPage() {
                 </div>
               </div>
             )}
+
+            {/* Ask questions panel */}
+            <div className="bg-white rounded-lg border p-6 space-y-4">
+              <h2 className="text-lg font-semibold text-gray-900">Ask questions about this reading</h2>
+              
+              {/* Chat messages area */}
+              <div className="h-80 overflow-y-auto flex flex-col gap-2 p-4 bg-gray-50 rounded-lg">
+                {chatMessages.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-8">
+                    Ask a question about the reading to get started.
+                  </p>
+                ) : (
+                  chatMessages.map((message) => (
+                    <div
+                      key={message.id}
+                      className={`flex ${
+                        message.role === "user" ? "justify-end" : "justify-start"
+                      }`}
+                    >
+                      <div
+                        className={`max-w-[80%] rounded-lg px-4 py-2 ${
+                          message.role === "user"
+                            ? "bg-sky-600 text-white"
+                            : "bg-slate-800 text-slate-50"
+                        }`}
+                      >
+                        <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                      </div>
+                    </div>
+                  ))
+                )}
+                {isSending && (
+                  <div className="flex justify-start">
+                    <div className="bg-slate-800 text-slate-50 rounded-lg px-4 py-2">
+                      <p className="text-sm">Thinking...</p>
+                    </div>
+                  </div>
+                )}
+                <div ref={chatEndRef} />
+              </div>
+
+              {/* Chat error */}
+              {chatError && (
+                <div className="text-sm text-destructive text-center">
+                  {chatError}
+                </div>
+              )}
+
+              {/* Chat input and send button */}
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Ask a question about the reading..."
+                  className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  disabled={isSending}
+                />
+                <Button
+                  onClick={handleSend}
+                  disabled={isSending || chatInput.trim().length === 0}
+                  size="lg"
+                >
+                  {isSending ? "Thinking…" : "Send"}
+                </Button>
+              </div>
+            </div>
           </div>
         )}
       </main>
