@@ -92,16 +92,16 @@ export default function Home() {
 
       {/* Main Content */}
       <main className="relative flex min-h-[calc(100vh-80px)] w-full max-w-3xl mx-auto flex-col items-center justify-center py-12 px-4 sm:px-8 lg:px-16 z-10">
-        <div className="relative w-full max-w-2xl space-y-8 animate-fade-in">
+        <div className="relative w-full max-w-3xl space-y-8 animate-fade-in">
           {/* Hero Section */}
-          <div className="text-center space-y-4">
+          <div className="text-center space-y-4 max-w-8xl mx-auto">
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 tracking-tight">
-              Turn PDFs into
+              Turn Your Unparsable Readings into
               <br />
               <span className="text-gray-600">Study Companions</span>
             </h1>
-            <p className="text-lg sm:text-xl text-gray-600 max-w-xl mx-auto leading-relaxed">
-              Instantly parse scanned PDFs and transform them into an interactive study experience with AI-powered summaries and Q&A.
+            <p className="text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
+              Extract text from unparsable readings and chat with AI to understand your readings faster through instant summaries and interactive Q&A.
             </p>
           </div>
 

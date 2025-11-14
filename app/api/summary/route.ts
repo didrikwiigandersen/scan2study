@@ -34,7 +34,7 @@ export async function POST(req: Request) {
       max_tokens: 1024,
       system: `
 You are a study assistant for university students. 
-When given a course reading, you create a concise, exam-focused summary.
+When given a course reading, you create a concise, focused summary.
 
 Your goals:
 - Help the student quickly grasp the main ideas, arguments, and structure of the text.
@@ -48,7 +48,7 @@ Each bullet should be 1–3 sentences long.
         {
           role: "user",
           content: `
-Summarize the following course reading for a student who needs to understand it for class and exams.
+Summarize the following course reading for a student who needs to understand it for class, homework, and exams.
 
 Focus on:
 - The author's main thesis or central question.
