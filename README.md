@@ -1,7 +1,13 @@
 # Scan2Study
 
-![Scan2Study Screenshot](./image.png)
+![Scan2Study Screenshot](./media/image.png)
 ---
+
+## The Problem 
+ Uploading scanned .pdfs to ChatGPT gives the follow error.
+ ![ChatGPT Could not Upload](./media/could-not-upload.png)
+
+  ![ChatGPT Could not Parse](./media/could-not-parse.png)
 
 ## 🚀 Overview  
 **Scan2Study** turns scanned or non-machine-readable PDFs, like old course readings, into a clean chat-based study assistant.  
